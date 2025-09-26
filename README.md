@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Smart Bus Tracker
 
-## Getting Started
+Live bus tracking, ETAs, and routes — built with Next.js (App Router) and TailwindCSS, featuring Leaflet maps, Server-Sent Events for live updates, and a minimal driver simulator.
 
-First, run the development server:
+## Features (MVP)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Live bus tracking on a map
+- Search buses and view route info
+- Select a stop to view ETAs (distance/speed based)
+- Driver simulator to send mock GPS updates
+- Authority dashboard with live locations and route stats
+- PWA basics: manifest, theme-color, installable
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- Next.js (App Router), React, TailwindCSS v4
+- Leaflet + React-Leaflet for maps
+- SSE for real-time location streaming
+- In-memory mock data layer (buses, routes, stops, locations)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+- `src/lib/data.js` — Mock data and in-memory location store
+- `src/lib/eta.js` — ETA computation util
+- `src/lib/events.js` — Simple pub/sub for streaming
+- `src/app/api/` — REST + SSE endpoints
+- `src/components/MapView.jsx` — SSR-safe Leaflet map
+- `src/app/page.js` — Commuter UI
+- `src/app/driver/page.js` — Driver simulator
+- `src/app/dashboard/page.js` — authority dashboard
+- `public/manifest.json`, `public/icons/*` — PWA assets
 
-To learn more about Next.js, take a look at the following resources:
+## Run Locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Install deps (already done in scaffold):
+    ```bash
+    npm install
+    ```
+2. Start dev server:
+    ```bash
+    npm run dev
+    ```
+3. Open http://localhost:3000
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If you recently edited the SSE stream (`/api/stream/locations`), fully restart the dev server to clear stale module state (Ctrl+C then `npm run dev`).
 
-## Deploy on Vercel
+## Demo Guide
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Home page: live map + buses list. Select a stop in the header to view ETAs (auto-refresh every 10s).
+- Driver simulator: http://localhost:3000/driver
+  - Choose a bus (b1 or b3), click Start to send updates every 3s.
+- Dashboard: http://localhost:3000/dashboard
+  - Shows total/active buses and a live table of locations.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API Endpoints
+
+- `GET /api/buses` → `{ buses, routes, stops }`
+- `GET /api/location/:busId` → latest location
+- `POST /api/location/update` → update bus location
+- `GET /api/eta/:stopId` → ETAs for a stop
+- `GET /api/locations` → all current locations
+- `GET /api/stream/locations` → SSE stream
+
+## Notes
+
+- This project uses an in-memory store for simplicity (ideal for hackathon/demo). Replace with a database (e.g., Postgres + Redis) for production.
+- For push notifications, integrate Firebase Cloud Messaging.
