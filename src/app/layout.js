@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Inter } from "next/font/google";
-import ThemeToggle from "@/components/ThemeToggle";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
+import AuthNav from "@/components/AuthNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={`${inter.className} min-h-screen text-gray-900 antialiased`}>
+        <Toaster position="top-center" />
         <nav className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b">
           <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-2 font-semibold">
@@ -37,7 +39,7 @@ export default function RootLayout({ children }) {
               <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
               <Link href="/driver" className="hover:text-blue-600 transition-colors">Driver</Link>
               <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Dashboard</Link>
-              <div className="ml-2"><ThemeToggle /></div>
+              <div className="ml-2"><AuthNav /></div>
             </div>
           </div>
         </nav>

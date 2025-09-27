@@ -42,7 +42,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen grid grid-rows-[auto_1fr]">
-      <header className="border-b bg-gradient-to-b from-white to-gray-50">
+      <header className="  bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 md:flex-row md:items-center">
           <div className="text-xl font-semibold">Find your bus in real-time</div>
           <div className="flex-1 flex gap-3">
