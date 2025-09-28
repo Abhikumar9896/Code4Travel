@@ -78,12 +78,15 @@ export default async function handler(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+
+    const randomDigits = Math.floor(100 + Math.random() * 900); // 100–999
+    const userId = `User${Date.now()}${randomDigits}`;
    
 
     // Create the user
     const newUser = await users.create({
       fullName,
-      
+      userId,
       email,
       password: hashedPassword,
     });
@@ -95,6 +98,7 @@ export default async function handler(req, res) {
       success: true,
       message: "Account created successfully",
       data: {
+        id: newUser.userId,
         fullName: newUser.fullName,
         email: newUser.email,
       },

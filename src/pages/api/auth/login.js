@@ -35,8 +35,6 @@ export default async function handler(req, res) {
     }
  
     const isMatch = await bcrypt.compare(password, user.password);
-    // console.log(password);
-    // console.log(user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -44,13 +42,14 @@ export default async function handler(req, res) {
       });
     }
 
+    // Provide a stable id for downstream code
+    const id = (user.userId || user._id || "").toString();
+
     // Set cookie
     const cookie = serialize("customUser", JSON.stringify({
-     
+      id,
       email: user.email,
       fullName: user.fullName,
-     
-     
       profilePhoto: user.profilePhoto,
     }), {
       httpOnly: true,
@@ -65,10 +64,9 @@ export default async function handler(req, res) {
       success: true,
       message: "Login successful",
       data: {
+        id,
         fullName: user.fullName,
         email: user.email,
-        
-       
         profilePhoto: user.profilePhoto,
       }
     });
