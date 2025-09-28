@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import toast from "react-hot-toast";
 
 const OTPPage = () => {
   const [otp, setOtp] = useState("");
@@ -13,6 +14,7 @@ const OTPPage = () => {
     const data = localStorage.getItem("pendingSignup");
     if (!data) {
       setError("Signup data missing. Please start over.");
+      toast.error("Signup data missing. Please start over.");
       return;
     }
     try {
@@ -20,6 +22,7 @@ const OTPPage = () => {
       setPendingData(parsedData);
     } catch (err) {
       setError("Invalid signup data. Please start over.");
+      toast.error("Invalid signup data. Please start over.");
     }
   }, []);
 
@@ -27,11 +30,13 @@ const OTPPage = () => {
     e.preventDefault();
     if (!pendingData) {
       setError("Signup data missing. Please start over.");
+      toast.error("Signup data missing. Please start over.");
       return;
     }
 
     if (!otp || otp.length !== 6) {
       setError("Enter a valid 6-digit OTP");
+      toast.error("Enter a valid 6-digit OTP");
       return;
     }
 
@@ -51,13 +56,16 @@ const OTPPage = () => {
 
       if (result.success) {
         localStorage.removeItem("pendingSignup");
-        router.push("/dashboard");
+        router.push("/");
+        toast.success("Signup successful!");
       } else {
         setError(result.message || "Invalid OTP. Please try again.");
+        toast.error(result.message || "Invalid OTP. Please try again.");
       }
     } catch (err) {
       console.error(err);
       setError("Failed to verify OTP. Please try again.");
+      toast.error("Failed to verify OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +89,7 @@ const OTPPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900  p-4">
       <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6 w-full max-w-md border border-white/20">
         <h1 className="text-2xl font-bold text-white mb-4">Verify OTP</h1>
         <p className="text-gray-300 mb-4">

@@ -1,39 +1,58 @@
-import "./globals.css";
-import Link from "next/link";
+import "./globals.css"; 
 import { Toaster } from "react-hot-toast";
-import AuthNav from "@/components/AuthNav";
+import Navbar from "@/components/Navbar";
 import Script from "next/script";
 import Footer from "@/components/Footer";
-
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+const Chatbot = dynamic(() => import("../components/Chatbot"), {
+    ssr: false,
+  });
 export default function MyApp({ Component, pageProps }) {
+
+
+    function ScrollToTopButton() {
+        const [visible, setVisible] = useState(false);
+      
+        useEffect(() => {
+          const handleScroll = () => {
+            setVisible(window.scrollY > 200);
+          };
+          window.addEventListener('scroll', handleScroll);
+          return () => window.removeEventListener('scroll', handleScroll);
+        }, []);
+      
+        const scrollToTop = () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      
+        return (
+          <button
+            onClick={scrollToTop}
+            className={`fixed bottom-24 cursor-pointer right-8 z-50 p-3   text-black  transition-opacity duration-300  focus:outline-none ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            aria-label="Scroll to top"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+        );
+      }
+
   return (
     <div className="min-h-screen z-40 text-gray-900 antialiased">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <Toaster position="top-center" />
-      <nav className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-blue-600 text-white text-xs">SB</span>
-            <span>Smart Bus Tracker</span>
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
-            <Link href="/ourteam" className="hover:text-blue-600 transition-colors">Our Team</Link>
-            <Link href="/BusBook" className="hover:text-blue-600 transition-colors">Book Ticket</Link>
-            <Link href="/BusTracker" className="hover:text-blue-600 transition-colors">Bus Tracker</Link>
-            <Link href="/BusLocation" className="hover:text-blue-600 transition-colors">Bus Location</Link>
-            <div className="ml-2"><AuthNav /></div>
-          </div>
-        </div>
-      </nav>
+       <Navbar />
 
-      <main className="pb-10">
+      <main  >
         <Component {...pageProps} />
       </main>
-
-      <footer className="border-t bg-white/70">
+  
          <Footer />
-      </footer>
+  
+      <ScrollToTopButton />
+      <Chatbot />
     </div>
   );
 }

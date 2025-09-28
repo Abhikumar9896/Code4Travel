@@ -11,26 +11,26 @@ const teamMembers = [
   },
   {
     name: "Abhikesh",
-    role: "UI/UX Designer",
+    role: "Full Stack Developer",
     image: "/team/abhishekh.png",
     bio: "Passionate about creating beautiful and user-friendly designs.",
   },
   {
     name: "Abhikesh Kumar",
-    role: "Backend Engineer",
+    role: "Frontend Engineer",
     image: "/team/ab.png",
     bio: "Expert in Node.js, APIs, and secure backend architectures.",
   },
   {
     name: "Sherya Singh",
-    role: "Full Stack Developer",
+    role: "Frontend Developer",
     image: "/team/sherya.jpg",
     bio: "Specializes in building scalable MERN & Next.js applications.",
   },
   {
     name: "Prahalad",
     role: "UI/UX Designer",
-    image: "/team/prahalad.jpg",
+    image: "/team/prahalad.png",
     bio: "Passionate about creating beautiful and user-friendly designs.",
   },
   {
