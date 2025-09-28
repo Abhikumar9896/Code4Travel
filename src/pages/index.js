@@ -104,10 +104,10 @@ export default function Page() {
           </div>
         </aside>
 
-        <section className="h-[70vh] bg-white rounded-xl overflow-hidden border shadow-sm">
+        <section className="h-[70vh] z-10 bg-white rounded-xl overflow-hidden border shadow-sm">
           <MapView />
         </section>
       </div>
-    </div>
+    </div> 
   );
 }
