@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Toaster } from "react-hot-toast";
 import AuthNav from "@/components/AuthNav";
 import Script from "next/script";
+import Footer from "@/components/Footer";
 
 export default function MyApp({ Component, pageProps }) {
   return (
@@ -31,9 +32,7 @@ export default function MyApp({ Component, pageProps }) {
       </main>
 
       <footer className="border-t bg-white/70">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-gray-500">
-          © {new Date().getFullYear()} Smart Bus Tracker. All rights reserved.
-        </div>
+         <Footer />
       </footer>
     </div>
   );
