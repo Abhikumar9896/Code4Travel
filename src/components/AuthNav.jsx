@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import toast from "react-hot-toast";
 
 export default function AuthNav() {
-  const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
@@ -17,23 +16,23 @@ export default function AuthNav() {
       try {
         const res = await fetch("/api/auth/me", { cache: "no-store" });
         const data = await res.json();
-        if (!ignore) setUser(res.ok ? data.data : null);
+        if (!ignore) setAuthToken(res.ok ? data.data : null);
       } catch (e) {
-        if (!ignore) setUser(null);
+        if (!ignore) setAuthToken(null);
       } finally {
         if (!ignore) setLoading(false);
       }
     };
     load();
     return () => { ignore = true; };
-  }, [pathname]);
+  }, [router.asPath]);
 
   const onLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      setUser(null);
+      setAuthToken(null);
       toast.success("Logged out");
-      if (pathname.startsWith("/dashboard")) router.push("/");
+      if (router.asPath.startsWith("/dashboard")) router.push("/");
     } catch (e) {
       toast.error("Failed to logout");
     }
@@ -43,19 +42,17 @@ export default function AuthNav() {
     return <div className="text-sm text-gray-500">...</div>;
   }
 
-  if (!user) {
-    const from = encodeURIComponent(pathname || "/");
+  if (!authToken) {
+    const from = encodeURIComponent(router.asPath || "/");
     return (
       <div className="flex items-center gap-3">
-        <Link href={`/auth/login?from=${from}`} className="hover:text-blue-600 transition-colors text-sm">Login</Link>
-        <Link href={`/auth/signup?from=${from}`} className="bg-blue-600 text-white text-sm px-3 py-1 rounded">Sign up</Link>
+        <Link href={`/authpage?from=${from}&type=signup`} className="bg-blue-600 text-white text-sm px-3 py-1 rounded">Sign up</Link>
       </div>
     );
   }
 
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="text-gray-700">Hi, <span className="font-medium">{user.name?.split(" ")[0] || "Traveler"}</span></span>
       <button onClick={onLogout} className="border px-3 py-1 rounded hover:bg-gray-50">Logout</button>
     </div>
   );
