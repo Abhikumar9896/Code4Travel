@@ -3,13 +3,22 @@
 import "leaflet/dist/leaflet.css";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MapPin, Bus, Navigation, Gauge } from "lucide-react";
 
+// Dynamically import react-leaflet components (client-only)
 const LeafletMap = dynamic(
   async () => {
     const L = await import("react-leaflet");
     return ({ center, children }) => (
-      <L.MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
-        <L.TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+      <L.MapContainer
+        center={center}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <L.TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors"
+        />
         {children}
       </L.MapContainer>
     );
@@ -17,16 +26,52 @@ const LeafletMap = dynamic(
   { ssr: false }
 );
 
-const Marker = dynamic(async () => (await import("react-leaflet")).Marker, { ssr: false });
-const Popup = dynamic(async () => (await import("react-leaflet")).Popup, { ssr: false });
+const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), {
+  ssr: false,
+});
+const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), {
+  ssr: false,
+});
 
-export default function MapView({ initialCenter = [28.8955, 76.6066], eventUrl = "/api/stream/locations" }) {
-  const [markers, setMarkers] = useState({}); // busId -> {lat,lng,name,speedKmph}
+export default function MapView({
+  initialCenter = [28.8955, 76.6066],
+  eventUrl = "/api/stream/locations",
+}) {
+  const [markers, setMarkers] = useState({});
+  const [busMeta, setBusMeta] = useState({});
   const evtRef = useRef(null);
   const bufferRef = useRef({});
   const rafRef = useRef(null);
 
-  // Throttled state updater for incoming SSE messages
+  // ✅ Fix Leaflet marker icons only on client
+  useEffect(() => {
+    (async () => {
+      const L = await import("leaflet");
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+        iconUrl: "/leaflet/marker-icon.png",
+        shadowUrl: "/leaflet/marker-shadow.png",
+      });
+    })();
+  }, []);
+
+  // Load bus meta once
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const r = await fetch("/api/buses", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = await r.json();
+        const meta = {};
+        for (const b of data.buses || [])
+          meta[b.id] = { name: b.name, routeId: b.routeId };
+        setBusMeta(meta);
+      } catch {}
+    };
+    load();
+  }, []);
+
+  // Throttled update
   const scheduleFlush = () => {
     if (rafRef.current) return;
     rafRef.current = requestAnimationFrame(() => {
@@ -37,46 +82,15 @@ export default function MapView({ initialCenter = [28.8955, 76.6066], eventUrl =
       setMarkers((prev) => {
         const next = { ...prev };
         for (const [id, payload] of Object.entries(batch)) {
-          next[id] = { ...next[id], ...payload };
+          const meta = busMeta[id] || {};
+          next[id] = { ...next[id], ...payload, ...meta };
         }
         return next;
       });
     });
   };
 
-  useEffect(() => {
-    // Bootstrap markers from buses and current locations (single fetch each)
-    const bootstrap = async () => {
-      try {
-        const [br, lr] = await Promise.all([
-          fetch("/api/buses", { cache: "no-store" }),
-          fetch("/api/locations", { cache: "no-store" }),
-        ]);
-        const buses = br.ok ? (await br.json()).buses : [];
-        const locations = lr.ok ? (await lr.json()).locations : [];
-        const nameById = Object.fromEntries(buses.map((b) => [b.id, b.name]));
-        const base = {};
-        for (const loc of locations) {
-          if (typeof loc.lat !== "number" || typeof loc.lng !== "number") continue;
-          base[loc.busId] = {
-            lat: loc.lat,
-            lng: loc.lng,
-            speedKmph: loc.speedKmph ?? 0,
-            name: nameById[loc.busId] || loc.busId,
-          };
-        }
-        // Ensure buses with no location are still listed (optional)
-        for (const b of buses) {
-          if (!base[b.id]) base[b.id] = { name: b.name, lat: initialCenter[0], lng: initialCenter[1], speedKmph: 0 };
-        }
-        setMarkers(base);
-      } catch {
-        // ignore bootstrap failures for now
-      }
-    };
-    bootstrap();
-  }, [initialCenter]);
-
+  // Connect SSE
   useEffect(() => {
     let canceled = false;
     let es;
@@ -90,19 +104,43 @@ export default function MapView({ initialCenter = [28.8955, 76.6066], eventUrl =
         try {
           const evt = JSON.parse(data);
           const payload = evt.payload || evt;
-          if (!payload || typeof payload.lat !== "number" || typeof payload.lng !== "number" || !payload.busId)
+          if (
+            !payload ||
+            typeof payload.lat !== "number" ||
+            typeof payload.lng !== "number" ||
+            !payload.busId
+          )
             return;
-          bufferRef.current[payload.busId] = { ...bufferRef.current[payload.busId], ...payload };
+          bufferRef.current[payload.busId] = {
+            ...bufferRef.current[payload.busId],
+            ...payload,
+          };
           scheduleFlush();
-        } catch {
-          // ignore parse errors
-        }
+        } catch {}
       };
 
       es.onmessage = (e) => onPayload(e.data);
       es.addEventListener("location", (e) => onPayload(e.data));
+      es.addEventListener("snapshot", (e) => {
+        try {
+          const { locations } = JSON.parse(e.data) || {};
+          if (!Array.isArray(locations)) return;
+          const batch = {};
+          for (const loc of locations) {
+            if (
+              loc &&
+              typeof loc.lat === "number" &&
+              typeof loc.lng === "number" &&
+              loc.busId
+            ) {
+              batch[loc.busId] = loc;
+            }
+          }
+          bufferRef.current = { ...bufferRef.current, ...batch };
+          scheduleFlush();
+        } catch {}
+      });
       es.onerror = () => {
-        // Attempt to reconnect after a short delay
         es?.close();
         setTimeout(() => connect(), 1500);
       };
@@ -116,26 +154,39 @@ export default function MapView({ initialCenter = [28.8955, 76.6066], eventUrl =
       rafRef.current = null;
       bufferRef.current = {};
     };
-  }, [eventUrl]);
+  }, [eventUrl, busMeta]);
 
   const center = useMemo(() => initialCenter, [initialCenter]);
 
   return (
-    <div className="h-full z-10 w-full">
+    <div className="h-full w-full z-10">
       <LeafletMap center={center}>
-        {Object.entries(markers).map(([busId, m]) => (
+        {Object.entries(markers).map(([busId, m]) =>
           typeof m.lat === "number" && typeof m.lng === "number" ? (
             <Marker key={busId} position={[m.lat, m.lng]}>
               <Popup>
-                <div className="text-sm">
-                  <div className="font-semibold">{m.name || busId}</div>
-                  <div>Lat: {m.lat.toFixed(5)} Lng: {m.lng.toFixed(5)}</div>
-                  <div>Speed: {m.speedKmph ?? 0} km/h</div>
+                <div className="text-sm space-y-1">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Bus className="w-4 h-4 text-blue-600" />
+                    {m.name || busId}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Navigation className="w-4 h-4 text-green-600" />
+                    Route: {m.routeId || "-"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-red-600" />
+                    {m.lat.toFixed(5)}, {m.lng.toFixed(5)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Gauge className="w-4 h-4 text-orange-600" />
+                    {m.speedKmph ?? 0} km/h
+                  </div>
                 </div>
               </Popup>
             </Marker>
           ) : null
-        ))}
+        )}
       </LeafletMap>
     </div>
   );

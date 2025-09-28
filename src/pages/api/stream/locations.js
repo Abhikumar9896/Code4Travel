@@ -1,3 +1,6 @@
+import { addClient, broadcast, clientCount } from "@/lib/sse";
+import { getAllLocations } from "@/lib/data";
+
 export const config = {
   api: { bodyParser: false },
 };
@@ -11,16 +14,26 @@ export default function handler(req, res) {
     Connection: "keep-alive",
   });
 
-  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  // Send an initial snapshot so clients have current positions
+  try {
+    const snapshot = getAllLocations();
+    res.write(`event: snapshot\n`);
+    res.write(`data: ${JSON.stringify({ locations: snapshot })}\n\n`);
+  } catch {}
 
-  // Example interval broadcaster. Replace with your real-time source
-  const interval = setInterval(() => {
-    // TODO: Pull and send live locations data here
-    send({ ping: Date.now() });
-  }, 10000);
+  // Keep-alive ping
+  const keepAlive = setInterval(() => {
+    try {
+      res.write(`event: ping\n`);
+      res.write(`data: ${JSON.stringify({ t: Date.now(), clients: clientCount() })}\n\n`);
+    } catch {}
+  }, 25000);
+
+  const remove = addClient(res);
 
   req.on("close", () => {
-    clearInterval(interval);
-    res.end();
+    clearInterval(keepAlive);
+    remove();
+    try { res.end(); } catch {}
   });
 }

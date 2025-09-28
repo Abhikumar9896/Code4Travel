@@ -28,7 +28,7 @@ export default function Page() {
     const loadETA = async () => {
       const res = await fetch(`/api/eta/${selectedStop}`, { cache: "no-store" });
       const data = await res.json();
-      setEtas(data.etas);
+      setEtas(Array.isArray(data?.etas) ? data.etas : []);
     };
     loadETA();
     const t = setInterval(loadETA, 10000);
@@ -85,16 +85,17 @@ export default function Page() {
             <div className="font-semibold mb-2">ETA</div>
             {selectedStop ? (
               <ul className="space-y-2">
-                {etas.map((e) => (
-                  <li key={e.busId} className="text-sm flex items-center justify-between">
-                    <span className="text-gray-700">{e.busName}</span>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">{e.etaMinutes} min</span>
-                      <span className="text-gray-500">{e.distanceKm} km</span>
-                    </span>
-                  </li>
-                ))}
-                {etas.length === 0 && (
+                {Array.isArray(etas) && etas.length > 0 ? (
+                  etas.map((e) => (
+                    <li key={e.busId} className="text-sm flex items-center justify-between">
+                      <span className="text-gray-700">{e.busName}</span>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">{e.etaMinutes} min</span>
+                        <span className="text-gray-500">{e.distanceKm} km</span>
+                      </span>
+                    </li>
+                  ))
+                ) : (
                   <div className="text-sm text-gray-500">No buses approaching.</div>
                 )}
               </ul>
